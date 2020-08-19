@@ -3,10 +3,12 @@ package com.ogungor.ronaldogame;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
+    long x;
     TextView textTime;
     TextView textScore;
     ImageButton imageButton;
@@ -23,9 +26,11 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout layoutScore;
     int gameScore;
     float randomLocation;
+    Runnable runnable;
+    Handler handler;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textScore = findViewById(R.id.textScore);
@@ -34,20 +39,40 @@ public class MainActivity extends AppCompatActivity {
         layoutTime = findViewById(R.id.layoutTime);
         layoutScore = findViewById(R.id.layoutScore);
         gameScore = 0;
-        textScore.setText(getString(R.string.score,gameScore));
+        textScore.setText(getString(R.string.score, gameScore));
 
         new CountDownTimer(10000, 1000) {
 
             @Override
-            public void onTick(long l) {
+            public void onTick(final long l) {
+
                 textTime.setText(getString(R.string.time, (l / 1000)));
-                imageButton.setX(generateRandomAxis(1));
-                imageButton.setY(generateRandomAxis(2));
+                x = 0;
+                handler = new Handler();
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        handler.postDelayed(runnable, 500);
+                        imageButton.setX(generateRandomAxis(1));
+                        imageButton.setY(generateRandomAxis(2));
+                        x++;
+                        if ((l / 1000) == 1) {
+                            stopHandler();
+                        }
+                        if (x == 2) {
+                            stopHandler();
+                        }
+
+                    }
+                };
+                handler.post(runnable);
             }
 
             @Override
             public void onFinish() {
-                
+                textScore.setVisibility(View.INVISIBLE);
+                textTime.setText(getString(R.string.time_finish));
+
                 AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
                 alert.setTitle(getString(R.string.dialog_title));
                 alert.setMessage(getString(R.string.dialog_question));
@@ -65,14 +90,21 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this, getString(R.string.gameover) + getString(R.string.score, gameScore), Toast.LENGTH_LONG).show();
                     }
                 });
-                alert.show();
-                textScore.setVisibility(View.INVISIBLE);
-                textTime.setText(getString(R.string.time_finish));
+                if (!isFinishing()) {
+                    alert.show();
+                }
+
+
                 ;
             }
         }.start();
 
 
+    }
+
+    public void stopHandler() {
+
+        handler.removeCallbacks(runnable);
     }
 
     ;
@@ -85,18 +117,21 @@ public class MainActivity extends AppCompatActivity {
 
         if (position == 1) {
             randomMin = 0;
-            randomMax = layoutTime.getWidth() - imageWidth;
+            int layoutTimeWidth= layoutTime.getWidth();
+            randomMax = layoutTimeWidth - imageWidth;
 
         } else {
             randomMin = layoutTime.getHeight();
             int windowsHeight = getWindowManager().getDefaultDisplay().getHeight();
-            int layoutTimeHeight = layoutTime.getHeight();
             int layoutScoreHeight = layoutScore.getHeight();
-            randomMax = (windowsHeight - (layoutScoreHeight + imageHeight + layoutTimeHeight));
-        }
+            randomMax = (windowsHeight - (layoutScoreHeight + imageHeight));
 
-        Random generateRandom = new Random();
-        return randomLocation = generateRandom.nextInt((randomMax - randomMin) + 1) + randomMin;
+        }
+        Random random = new Random();
+        randomLocation = random.nextInt((randomMax - randomMin))+randomMin;
+
+
+        return randomLocation;
     }
 
     public void score(View view) {
@@ -104,3 +139,5 @@ public class MainActivity extends AppCompatActivity {
         textScore.setText(getString(R.string.score, gameScore));
     }
 }
+
+
